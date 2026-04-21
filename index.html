@@ -1,4 +1,3 @@
-```react
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,6 +14,7 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // Firebase Configuration
         const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'wedding-savad-safreena';
         
@@ -24,6 +24,7 @@
 
         let currentUser = null;
 
+        // Initialize Authentication
         const initAuth = async () => {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -32,7 +33,7 @@
                     await signInAnonymously(auth);
                 }
             } catch (error) {
-                console.error("Auth error:", error);
+                console.error("Authentication Error:", error);
             }
         };
 
@@ -42,29 +43,39 @@
 
         initAuth();
 
-        window.submitRSVP = async (event) => {
-            event.preventDefault();
-            const btn = event.target.querySelector('button');
-            const originalBtnText = btn.innerText;
+        // RSVP Logic attached to window for HTML accessibility
+        window.processRSVP = async (event) => {
+            event.preventDefault(); // Stop page reload immediately
             
-            if (!currentUser) return;
+            const form = event.target;
+            const btn = form.querySelector('button');
+            const originalText = btn.innerHTML;
 
+            if (!currentUser) {
+                console.warn("User not authenticated yet. Retrying...");
+                await initAuth();
+                if (!currentUser) {
+                    alert("Connection error. Please check your internet and try again.");
+                    return;
+                }
+            }
+
+            // UI Loading State
             btn.disabled = true;
-            btn.innerText = "Sending...";
+            btn.innerHTML = `<span class="animate-pulse">Saving...</span>`;
 
-            const name = document.getElementById('rsvpName').value;
-            const guests = document.getElementById('rsvpGuests').value;
-            const message = document.getElementById('rsvpMessage').value;
+            const rsvpData = {
+                name: document.getElementById('rsvpName').value,
+                guests: document.getElementById('rsvpGuests').value,
+                message: document.getElementById('rsvpMessage').value,
+                timestamp: serverTimestamp()
+            };
 
             try {
                 const rsvpRef = collection(db, 'artifacts', appId, 'public', 'data', 'rsvps');
-                await addDoc(rsvpRef, {
-                    name,
-                    guests,
-                    message,
-                    timestamp: serverTimestamp()
-                });
+                await addDoc(rsvpRef, rsvpData);
 
+                // Celebrate
                 confetti({
                     particleCount: 150,
                     spread: 70,
@@ -72,12 +83,18 @@
                     colors: ['#c5a059', '#ffffff', '#8a6d3b']
                 });
 
-                document.getElementById('rsvpForm').style.display = 'none';
-                document.getElementById('success').classList.remove('hidden');
+                // Show Success Message
+                document.getElementById('rsvpFormContainer').classList.add('hidden');
+                document.getElementById('successMessage').classList.remove('hidden');
+                
+                // Scroll slightly to ensure success message is seen
+                document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
+
             } catch (error) {
-                console.error("RSVP Error:", error);
+                console.error("Submission Error:", error);
                 btn.disabled = false;
-                btn.innerText = originalBtnText;
+                btn.innerHTML = originalText;
+                alert("Failed to save RSVP. Please try again.");
             }
         };
     </script>
@@ -94,6 +111,7 @@
             background-color: var(--bg-soft);
             color: var(--text-main);
             overflow-x: hidden;
+            scroll-behavior: smooth;
         }
 
         .font-serif { font-family: 'Playfair Display', serif; }
@@ -163,9 +181,8 @@
             background: linear-gradient(to bottom, rgba(253, 250, 245, 0.2), rgba(253, 250, 245, 0.98));
         }
 
-        /* Enhanced Ornate Panel for Bismillah Visibility */
         .bismillah-panel {
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.45);
             backdrop-filter: blur(10px);
             padding: 2.5rem;
             border-radius: 20px;
@@ -177,7 +194,7 @@
 
         .bismillah-text {
             color: var(--primary);
-            text-shadow: 0 0 20px rgba(255, 255, 255, 1), 0 0 10px rgba(255, 255, 255, 0.8);
+            text-shadow: 0 0 20px rgba(255, 255, 255, 1);
         }
 
         .glass-panel {
@@ -192,16 +209,16 @@
     <!-- Splash Screen -->
     <div id="splash">
         <div class="reveal text-center p-12 bg-white relative active">
-            <p class="font-cinzel tracking-[0.5em] text-xs mb-4 text-gray-400 uppercase">The Wedding of</p>
+            <p class="font-cinzel tracking-[0.5em] text-xs mb-4 text-gray-400 uppercase">The Wedding Invitation of</p>
             <h1 class="text-4xl md:text-5xl font-serif text-amber-700 mb-8">Savad & Safreena</h1>
             <button id="entryBtn" onclick="openInvitation()" class="px-12 py-4 bg-amber-700 text-white rounded-full font-semibold hover:bg-amber-800 transition-all shadow-xl tracking-widest uppercase text-xs">
                 Open Invitation
             </button>
-            <p id="loadingHint" class="hidden mt-4 text-xs text-amber-600 animate-pulse font-medium italic">Preparing the Nasheed...</p>
+            <p id="loadingHint" class="hidden mt-4 text-xs text-amber-600 animate-pulse font-medium italic">Preparing your experience...</p>
         </div>
     </div>
 
-    <!-- Music Player (GitHub Raw Link) -->
+    <!-- Music Player (GitHub Nasheed) -->
     <audio id="bgMusic" loop preload="auto">
         <source src="https://raw.githubusercontent.com/ansafanchu/Wedding-site/c67b9e526300bafd0788734bba68c0964fef882a/Wedding%20Nasheed%20Muhammad%20Al%20Muqit%20(English%20Lyrics)%20-%20Nasheed%20Vocals%E2%84%A2%20(128k).mp3" type="audio/mpeg">
     </audio>
@@ -220,7 +237,7 @@
         </div>
 
         <div class="relative z-10 max-w-5xl reveal active">
-            <!-- Bismillah Section - Reverted to Gold with Glass visibility -->
+            <!-- Bismillah Section -->
             <div class="bismillah-panel">
                 <p class="font-arabic text-3xl md:text-5xl mb-4 bismillah-text">بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ</p>
                 <p class="italic text-xs md:text-sm font-serif text-amber-900 opacity-90 tracking-wide">"In the name of Allah, the Most Gracious, the Most Merciful"</p>
@@ -228,8 +245,7 @@
 
             <p class="font-cinzel tracking-[0.5em] text-xs md:text-sm mb-6 text-amber-800 font-bold uppercase">Save Our Date</p>
             <h1 class="text-6xl md:text-8xl lg:text-9xl font-serif text-amber-900 leading-tight mb-8">
-                Savad <br> <span class="font-cursive text-4xl md:text-6xl text-amber-600 block my-2">and</span> Safreena
-            </h1>
+                Savad <br> <span class="font-cursive text-4xl md:text-6xl text-amber-600 block my-2">and</span> Safreena</h1>
             <div class="flex items-center justify-center gap-4 text-amber-800">
                 <span class="h-[1px] w-12 bg-amber-300"></span>
                 <p class="text-xl md:text-2xl font-cinzel">Sunday, 03 May 2026</p>
@@ -303,41 +319,49 @@
     </section>
 
     <!-- RSVP Section -->
-    <section class="py-32 px-6 bg-[#fcf9f2]">
+    <section id="rsvp-section" class="py-32 px-6 bg-[#fcf9f2]">
         <div class="max-w-xl mx-auto text-center reveal">
             <h2 class="text-4xl font-serif mb-4 text-amber-950">Confirm Attendance</h2>
             <p class="text-gray-500 italic mb-10">We would love to have you with us</p>
             
-            <form id="rsvpForm" onsubmit="window.submitRSVP(event)" class="space-y-4 text-left">
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Your Name</label>
-                    <input type="text" id="rsvpName" placeholder="Enter your full name" required class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all">
+            <div id="rsvpFormContainer">
+                <form onsubmit="window.processRSVP(event)" class="space-y-4 text-left">
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Your Name</label>
+                        <input type="text" id="rsvpName" placeholder="Enter your full name" required class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Number of Guests</label>
+                        <select id="rsvpGuests" class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all">
+                            <option value="1">1 Person</option>
+                            <option value="2">2 Persons</option>
+                            <option value="3">3 Persons</option>
+                            <option value="4+">Full Family</option>
+                        </select>
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Message (Optional)</label>
+                        <textarea id="rsvpMessage" placeholder="Any wishes or notes?" class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="w-full py-5 bg-amber-800 text-white rounded-xl font-bold tracking-[0.2em] uppercase text-xs hover:bg-amber-900 shadow-xl transition-all transform active:scale-95">
+                        Send RSVP
+                    </button>
+                </form>
+            </div>
+
+            <!-- Success Message -->
+            <div id="successMessage" class="hidden mt-8 py-10 bg-white rounded-2xl shadow-sm border border-amber-50 text-center animate-fadeIn">
+                <div class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
                 </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Number of Guests</label>
-                    <select id="rsvpGuests" class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all">
-                        <option value="1">1 Person</option>
-                        <option value="2">2 Persons</option>
-                        <option value="3">3 Persons</option>
-                        <option value="4+">Full Family</option>
-                    </select>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Message (Optional)</label>
-                    <textarea id="rsvpMessage" placeholder="Any wishes or notes?" class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all" rows="3"></textarea>
-                </div>
-                <button type="submit" class="w-full py-5 bg-amber-800 text-white rounded-xl font-bold tracking-[0.2em] uppercase text-xs hover:bg-amber-900 shadow-xl transition-all transform active:scale-95">
-                    Send RSVP
-                </button>
-            </form>
-            <div id="success" class="hidden mt-8 py-10 text-amber-700 font-serif text-2xl italic animate-bounce">
-                JazakAllah! See you there.
+                <h3 class="text-3xl font-serif text-amber-800 mb-2">JazakAllah Khair!</h3>
+                <p class="text-gray-600 px-4">Your RSVP has been saved. We look forward to seeing you at the ceremony.</p>
             </div>
         </div>
     </section>
 
     <footer class="py-20 bg-white text-center">
-        <p class="font-cinzel text-[10px] tracking-[0.4em] text-amber-600 mb-6 uppercase font-bold">With best compliments from families</p>
+        <p class="font-cinzel text-[10px] tracking-[0.4em] text-amber-600 mb-6 uppercase font-bold">With best compliments from relatives & friends</p>
         <div class="text-4xl font-cursive text-amber-800">Savad & Safreena</div>
     </footer>
 
@@ -355,7 +379,7 @@
             audio.play().then(() => {
                 proceedToInvite();
             }).catch(error => {
-                console.error("Audio playback error:", error);
+                console.warn("Audio blocked by browser. Proceeding anyway.");
                 proceedToInvite();
             });
         }
@@ -383,9 +407,11 @@
         setInterval(() => {
             const now = new Date().getTime();
             const diff = weddingDate - now;
-            document.getElementById('days').innerText = Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
-            document.getElementById('hours').innerText = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
-            document.getElementById('mins').innerText = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+            if (diff > 0) {
+                document.getElementById('days').innerText = Math.floor(diff / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+                document.getElementById('hours').innerText = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+                document.getElementById('mins').innerText = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+            }
         }, 1000);
 
         function createPetals() {
