@@ -6,99 +6,7 @@
     <title>The Wedding of Savad & Safreena</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Cinzel:wght@400;700&family=Montserrat:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Amiri:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Configuration
-        const firebaseConfig = JSON.parse(__firebase_config);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'wedding-savad-safreena';
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        let currentUser = null;
-
-        // Initialize Authentication
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Authentication Error:", error);
-            }
-        };
-
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-        });
-
-        initAuth();
-
-        // RSVP Logic attached to window for HTML accessibility
-        window.processRSVP = async (event) => {
-            event.preventDefault(); // Stop page reload immediately
-            
-            const form = event.target;
-            const btn = form.querySelector('button');
-            const originalText = btn.innerHTML;
-
-            if (!currentUser) {
-                console.warn("User not authenticated yet. Retrying...");
-                await initAuth();
-                if (!currentUser) {
-                    alert("Connection error. Please check your internet and try again.");
-                    return;
-                }
-            }
-
-            // UI Loading State
-            btn.disabled = true;
-            btn.innerHTML = `<span class="animate-pulse">Saving...</span>`;
-
-            const rsvpData = {
-                name: document.getElementById('rsvpName').value,
-                guests: document.getElementById('rsvpGuests').value,
-                message: document.getElementById('rsvpMessage').value,
-                timestamp: serverTimestamp()
-            };
-
-            try {
-                const rsvpRef = collection(db, 'artifacts', appId, 'public', 'data', 'rsvps');
-                await addDoc(rsvpRef, rsvpData);
-
-                // Celebrate
-                confetti({
-                    particleCount: 150,
-                    spread: 70,
-                    origin: { y: 0.6 },
-                    colors: ['#c5a059', '#ffffff', '#8a6d3b']
-                });
-
-                // Show Success Message
-                document.getElementById('rsvpFormContainer').classList.add('hidden');
-                document.getElementById('successMessage').classList.remove('hidden');
-                
-                // Scroll slightly to ensure success message is seen
-                document.getElementById('successMessage').scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            } catch (error) {
-                console.error("Submission Error:", error);
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-                alert("Failed to save RSVP. Please try again.");
-            }
-        };
-    </script>
-
     <style>
         :root {
             --primary: #c5a059;
@@ -181,6 +89,7 @@
             background: linear-gradient(to bottom, rgba(253, 250, 245, 0.2), rgba(253, 250, 245, 0.98));
         }
 
+        /* Glass Panel for Bismillah Visibility */
         .bismillah-panel {
             background: rgba(255, 255, 255, 0.45);
             backdrop-filter: blur(10px);
@@ -201,6 +110,11 @@
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(197, 160, 89, 0.2);
+        }
+        
+        .insha-allah-text {
+            color: var(--primary);
+            letter-spacing: 0.1em;
         }
     </style>
 </head>
@@ -245,7 +159,8 @@
 
             <p class="font-cinzel tracking-[0.5em] text-xs md:text-sm mb-6 text-amber-800 font-bold uppercase">Save Our Date</p>
             <h1 class="text-6xl md:text-8xl lg:text-9xl font-serif text-amber-900 leading-tight mb-8">
-                Savad <br> <span class="font-cursive text-4xl md:text-6xl text-amber-600 block my-2">and</span> Safreena</h1>
+                Savad <br> <span class="font-cursive text-4xl md:text-6xl text-amber-600 block my-2">and</span> Safreena
+            </h1>
             <div class="flex items-center justify-center gap-4 text-amber-800">
                 <span class="h-[1px] w-12 bg-amber-300"></span>
                 <p class="text-xl md:text-2xl font-cinzel">Sunday, 03 May 2026</p>
@@ -293,7 +208,12 @@
                 </div>
             </div>
             
-            <a href="https://maps.app.goo.gl/Zo7A3kC1XUgbwnjF6?g_st=ic" target="_blank" class="inline-block px-12 py-4 bg-amber-700 text-white rounded-full hover:bg-amber-800 transition-all font-semibold uppercase tracking-widest text-xs shadow-lg transform hover:-translate-y-1">
+            <div class="mb-12 reveal">
+                <p class="font-arabic text-4xl text-amber-700 mb-4 tracking-widest">إن شاء الله</p>
+                <p class="font-cinzel text-xs tracking-[0.3em] text-amber-600 uppercase font-bold italic">Insha Allah</p>
+            </div>
+            
+            <a href="https://maps.app.goo.gl/Zo7A3kC1XUgbwnjF6?g_st=ic" target="_blank" class="inline-block px-12 py-4 bg-amber-700 text-white rounded-full hover:bg-amber-800 transition-all shadow-xl tracking-widest uppercase text-xs shadow-lg transform hover:-translate-y-1">
                 See Location on Map
             </a>
         </div>
@@ -318,48 +238,6 @@
         </div>
     </section>
 
-    <!-- RSVP Section -->
-    <section id="rsvp-section" class="py-32 px-6 bg-[#fcf9f2]">
-        <div class="max-w-xl mx-auto text-center reveal">
-            <h2 class="text-4xl font-serif mb-4 text-amber-950">Confirm Attendance</h2>
-            <p class="text-gray-500 italic mb-10">We would love to have you with us</p>
-            
-            <div id="rsvpFormContainer">
-                <form onsubmit="window.processRSVP(event)" class="space-y-4 text-left">
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Your Name</label>
-                        <input type="text" id="rsvpName" placeholder="Enter your full name" required class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all">
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Number of Guests</label>
-                        <select id="rsvpGuests" class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all">
-                            <option value="1">1 Person</option>
-                            <option value="2">2 Persons</option>
-                            <option value="3">3 Persons</option>
-                            <option value="4+">Full Family</option>
-                        </select>
-                    </div>
-                    <div class="space-y-1">
-                        <label class="text-[10px] font-bold uppercase tracking-widest text-amber-800 ml-2">Message (Optional)</label>
-                        <textarea id="rsvpMessage" placeholder="Any wishes or notes?" class="w-full px-6 py-4 border border-amber-100 bg-white rounded-xl focus:border-amber-600 outline-none transition-all" rows="3"></textarea>
-                    </div>
-                    <button type="submit" class="w-full py-5 bg-amber-800 text-white rounded-xl font-bold tracking-[0.2em] uppercase text-xs hover:bg-amber-900 shadow-xl transition-all transform active:scale-95">
-                        Send RSVP
-                    </button>
-                </form>
-            </div>
-
-            <!-- Success Message -->
-            <div id="successMessage" class="hidden mt-8 py-10 bg-white rounded-2xl shadow-sm border border-amber-50 text-center animate-fadeIn">
-                <div class="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
-                </div>
-                <h3 class="text-3xl font-serif text-amber-800 mb-2">JazakAllah Khair!</h3>
-                <p class="text-gray-600 px-4">Your RSVP has been saved. We look forward to seeing you at the ceremony.</p>
-            </div>
-        </div>
-    </section>
-
     <footer class="py-20 bg-white text-center">
         <p class="font-cinzel text-[10px] tracking-[0.4em] text-amber-600 mb-6 uppercase font-bold">With best compliments from relatives & friends</p>
         <div class="text-4xl font-cursive text-amber-800">Savad & Safreena</div>
@@ -379,7 +257,7 @@
             audio.play().then(() => {
                 proceedToInvite();
             }).catch(error => {
-                console.warn("Audio blocked by browser. Proceeding anyway.");
+                console.warn("Audio playback error:", error);
                 proceedToInvite();
             });
         }
